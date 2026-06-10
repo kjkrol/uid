@@ -56,7 +56,8 @@ The UID64 type is a uint64 partitioned into three segments:
 
 ## Usage
 
-1. Pool Management (UID64Pool)
+## Pool Management (UID64Pool)
+   
 The pool handles allocation, generation increments, and index validation.
 
 ```go
@@ -90,7 +91,7 @@ func main() {
 }
 ```
 
-2. Custom Metadata (MetaSegment)
+## Custom Metadata (MetaSegment)
 
 Divide the 8-bit Metadata space into strict, pre-shifted segments to prevent bit collisions between modules.
 

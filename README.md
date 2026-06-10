@@ -1,5 +1,28 @@
 # kjkrol/uid
 
+<p align="center">
+  <!--<img src=".github/docs/img/logo.png" alt="UID" width="300">-->
+  <br>
+  <a href="https://go.dev">
+    <img src="https://img.shields.io/badge/Go-1.23+-00ADD8?style=flat-square&logo=go" alt="Go Version">
+  </a>
+  <a href="https://pkg.go.dev/github.com/kjkrol/uid">
+    <img src="https://img.shields.io/badge/GoDoc-Reference-007d9c?style=flat-square&logo=go" alt="GoDoc">
+  </a>
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License">
+  </a>
+  <a href="https://goreportcard.com/report/github.com/kjkrol/uid">
+    <img src="https://goreportcard.com/badge/github.com/kjkrol/uid" alt="Go Report Card">
+  </a>
+  <a href="https://app.codecov.io/gh/kjkrol/uid">
+    <img src="https://img.shields.io/codecov/c/github/kjkrol/uid?style=flat-square&logo=codecov" alt="Codecov Coverage">
+  </a>
+  <a href="https://github.com/kjkrol/uid/actions">
+    <img src="https://github.com/kjkrol/uid/actions/workflows/go.yml/badge.svg" alt="Go Quality Check">
+  </a>
+</p>
+
 A bit-packed 64-bit Generational Unique Identifier package for Go. 
 
 Designed for Entity Component Systems (ECS), memory pools, and contiguous data structures. It provides index recycling with ABA problem prevention and an isolated 8-bit space for module-specific metadata.

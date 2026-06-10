@@ -6,7 +6,7 @@ import (
 
 func TestUID64_Components(t *testing.T) {
 	var wantIndex uint32 = 0x12345678
-	// Używamy maski, ponieważ Generation to teraz 24 bity (max 0xFFFFFF)
+	// We use a mask because Generation is now 24 bits (max 0xFFFFFF)
 	var wantGen uint32 = 0xABCDEF & GenerationMask
 
 	u := New(wantGen, wantIndex)
@@ -59,8 +59,8 @@ func TestUID64_MaxValues(t *testing.T) {
 }
 
 func TestUID64_GenerationOverflow(t *testing.T) {
-	// Sprawdzamy, czy podanie zbyt dużej generacji (np. pełne 32-bity)
-	// zostanie bezpiecznie ucięte przez maskę przy tworzeniu i nie nadpisze Metadata.
+	// We check if providing too large a generation (e.g. full 32-bits)
+	// is safely truncated by the mask during creation and does not overwrite Metadata.
 	overflowGen := uint32(0xFFFFFFFF)
 	index := uint32(5)
 
@@ -77,24 +77,24 @@ func TestUID64_GenerationOverflow(t *testing.T) {
 }
 
 func TestUID64_MetaSegment(t *testing.T) {
-	// Tworzymy testowy segment (np. 3 bity na offsecie 2)
+	// We create a test segment (e.g. 3 bits at offset 2)
 	testSegment := NewMetaSegment(3, 2)
 	u := New(1, 100)
 
-	// Przypisujemy poprawną wartość wewnątrz limitu (5 = binarnie 101)
+	// We assign a correct value within the limit (5 = binary 101)
 	u2 := u.WithMetaSegment(testSegment, 5)
 
 	if u2.MetaSegment(testSegment) != 5 {
 		t.Errorf("MetaSegment read: got %d, want 5", u2.MetaSegment(testSegment))
 	}
 
-	// Sprawdzamy, czy modyfikacja segmentu nie uszkodziła Indeksu lub Generacji
+	// We check if segment modification did not corrupt Index or Generation
 	if u2.Index() != 100 || u2.Generation() != 1 {
 		t.Errorf("MetaSegment mutation corrupted core identifiers")
 	}
 
-	// Sprawdzamy bezpieczne ucinanie bitów (Overflow Protection).
-	// Wpisanie wartości 255 (0xFF) w 3-bitowy segment powinno po cichu uciąć wartość do maksimum (7).
+	// We check safe bit truncation (Overflow Protection).
+	// Writing the value 255 (0xFF) into a 3-bit segment should silently truncate the value to the maximum (7).
 	u3 := u.WithMetaSegment(testSegment, 0xFF)
 	if u3.MetaSegment(testSegment) != 7 {
 		t.Errorf("MetaSegment failed to truncate overflow: got %d, want 7", u3.MetaSegment(testSegment))

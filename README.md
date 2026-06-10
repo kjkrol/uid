@@ -1,7 +1,7 @@
 # kjkrol/uid
 
 <p align="center">
-  <!--<img src=".github/docs/img/logo.png" alt="UID" width="300">-->
+  <img src=".github/docs/img/UID.png" alt="UID" width="300">
   <br>
   <a href="https://go.dev">
     <img src="https://img.shields.io/badge/Go-1.23+-00ADD8?style=flat-square&logo=go" alt="Go Version">

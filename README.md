@@ -25,7 +25,7 @@
 
 A bit-packed 64-bit Generational Unique Identifier package for Go. 
 
-Designed for Entity Component Systems (ECS), memory pools, and contiguous data structures. It provides index recycling with ABA problem prevention and an isolated 8-bit space for module-specific metadata.
+Designed for memory pools and contiguous data structures. It provides index recycling with ABA problem prevention and an isolated 8-bit space for module-specific metadata.
 
 ## Overview
 
@@ -94,6 +94,17 @@ func main() {
 
 Divide the 8-bit Metadata space into strict, pre-shifted segments to prevent bit collisions between modules.
 
+For example, defining a 1-bit segment at offset 7 (`virtualFlag`) and a 2-bit segment at offset 0 (`spatialFrag`):
+
+```text
+  7   6   5   4   3   2   1   0   (Metadata Bit Index)
++---+---+---+---+---+---+---+---+
+| V |   |   |   |   |   | S | S |
++---+---+---+---+---+---+---+---+
+  ^                       ^^^^^
+  virtualFlag             spatialFrag
+```
+
 ```go
 package main
 
@@ -122,17 +133,4 @@ func main() {
 
 	fmt.Printf("Virtual: %v, Frag: %d\n", isVirtual, fragValue)
 }
-```
-
-## Metadata Bit Mapping
-
-Example of a segment defined with `length=3` and `offset=2`:
-
-```text
-7   6   5   4   3   2   1   0   (Metadata Bit Index)
-+---+---+---+---+---+---+---+---+
-|   |   |   | ■ | ■ | ■ |   |   |
-+---+---+---+---+---+---+---+---+
-              ^^^^^^^^^
-            Segment Space
 ```

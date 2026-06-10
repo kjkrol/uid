@@ -120,3 +120,65 @@ func TestUID64Pool_InitialState(t *testing.T) {
 		t.Error("expected freeIndices to be empty initially")
 	}
 }
+
+// 6. Dynamic Growth
+func TestUID64Pool_Grow(t *testing.T) {
+	// Case: Capacity zero grows to 8
+	poolZero := NewUID64Pool(0, 0)
+	poolZero.Next()
+	if poolZero.capacity != 8 {
+		t.Errorf("expected zero capacity to grow to 8, got %d", poolZero.capacity)
+	}
+
+	// Case: Capacity doubles when full
+	pool := NewUID64Pool(2, 2)
+	pool.Next() // idx 0
+	pool.Next() // idx 1
+
+	if pool.capacity != 2 {
+		t.Errorf("expected capacity 2, got %d", pool.capacity)
+	}
+
+	pool.Next() // idx 2, triggers grow
+	if pool.capacity != 4 {
+		t.Errorf("expected capacity to double to 4, got %d", pool.capacity)
+	}
+	if cap(pool.generations) < 4 {
+		t.Errorf("expected generations capacity at least 4, got %d", cap(pool.generations))
+	}
+}
+
+// 7. Reset State
+func TestUID64Pool_Reset(t *testing.T) {
+	pool := NewUID64Pool(10, 10)
+
+	// Case: Reset clears state
+	e1 := pool.Next()
+	pool.Release(e1)
+	e2 := pool.Next() // generation 1
+
+	pool.Reset()
+
+	if pool.lastIndex != 0 {
+		t.Errorf("expected lastIndex 0 after reset, got %d", pool.lastIndex)
+	}
+	if len(pool.freeIndices) != 0 {
+		t.Errorf("expected freeIndices to be empty after reset")
+	}
+
+	// Case: Old entities are invalid
+	if pool.IsValid(e2) {
+		t.Error("expected previously active entity to be invalid after reset")
+	}
+
+	// Case: Allocates from beginning
+	e3 := pool.Next()
+	index, gen := e3.Unpack()
+	if index != 0 || gen != 0 {
+		t.Errorf("expected index 0 and gen 0 after reset, got idx %d gen %d", index, gen)
+	}
+
+	if pool.IsValid(e2) {
+		t.Error("expected old entity to remain invalid even after reallocating its index")
+	}
+}

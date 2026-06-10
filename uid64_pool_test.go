@@ -74,7 +74,7 @@ func TestUID64Pool_Validation(t *testing.T) {
 	}
 
 	// Case: Out of bounds index
-	futureUID := New(0, 999)
+	futureUID := newUID(0, 999)
 	if pool.IsValid(futureUID) {
 		t.Error("expected out-of-bounds UID64 to be invalid")
 	}

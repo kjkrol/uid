@@ -62,15 +62,10 @@ func NewMetaSegment(length, offset uint8) MetaSegment {
 //   - Bits 56-63: Metadata (8 bits) - User-defined space for module flags.
 type UID64 uint64
 
-// New creates a new UID64 from the provided generation and index.
-func New(gen, index uint32) UID64 {
+// newUID creates a new UID64 from the provided generation and index.
+func newUID(gen, index uint32) UID64 {
 	gen &= GenerationMask
 	return UID64(uint64(gen)<<GenerationShift | uint64(index))
-}
-
-// FromUint64 casts a raw uint64 value directly into a UID64.
-func FromUint64(v uint64) UID64 {
-	return UID64(v)
 }
 
 // Index extracts the 32-bit index component from the UID64.

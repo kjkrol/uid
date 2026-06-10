@@ -121,7 +121,7 @@ var virtualFlag = uid.NewMetaSegment(1, 7)
 var spatialFrag = uid.NewMetaSegment(2, 0)
 
 func main() {
-	id := uid.New(1, 42)
+	id := uid.UID64(42) // Cast raw integer to UID64
 
 	// Mutate segments
 	id = id.WithMetaSegment(virtualFlag, 1)

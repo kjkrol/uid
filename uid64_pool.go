@@ -31,7 +31,7 @@ func (p *UID64Pool) Next() UID64 {
 		index := p.freeIndices[fLen-1]
 		p.freeIndices = p.freeIndices[:fLen-1]
 		gen := p.generations[index]
-		return New(gen, index)
+		return newUID(gen, index)
 	}
 
 	if p.lastIndex >= p.capacity {
@@ -41,7 +41,7 @@ func (p *UID64Pool) Next() UID64 {
 	index := p.lastIndex
 	p.lastIndex++
 
-	return New(p.generations[index], index)
+	return newUID(p.generations[index], index)
 }
 
 func (p *UID64Pool) grow() {

@@ -1,5 +1,3 @@
-// Package uid implements a 64-bit Generational Identifier pattern
-// designed for safe index recycling and custom metadata storage.
 package uid
 
 const (

@@ -8,13 +8,15 @@ type UID64Pool struct {
 	capacity    uint32
 }
 
-// NewUID64Pool creates a new generational pool for UID64 with pre-allocated capacities.
-func NewUID64Pool(initialCap, freeIndicesCap int) UID64Pool {
-	return UID64Pool{
-		generations: make([]uint32, initialCap),
-		freeIndices: make([]uint32, 0, freeIndicesCap),
-		capacity:    uint32(initialCap),
-	}
+// Init prepares the pool with pre-allocated capacities: indexCap sizes the index
+// generation table (the index space the pool can address before growing) and
+// recycleCap sizes the released-index recycling list. It resets any prior state,
+// so it may also be used to re-initialise a reused pool.
+func (p *UID64Pool) Init(indexCap, recycleCap int) {
+	p.lastIndex = 0
+	p.freeIndices = make([]uint32, 0, recycleCap)
+	p.generations = make([]uint32, indexCap)
+	p.capacity = uint32(indexCap)
 }
 
 // Reset clears the pool state, invalidating all previously issued UID64s.
@@ -34,9 +36,7 @@ func (p *UID64Pool) Next() UID64 {
 		return newUID(gen, index)
 	}
 
-	if p.lastIndex >= p.capacity {
-		p.grow()
-	}
+	p.ensure(p.lastIndex + 1)
 
 	index := p.lastIndex
 	p.lastIndex++
@@ -44,10 +44,46 @@ func (p *UID64Pool) Next() UID64 {
 	return newUID(p.generations[index], index)
 }
 
-func (p *UID64Pool) grow() {
+// NextN reserves len(dst) fresh UID64s and writes them into dst. The caller
+// owns the buffer, so it is zero-alloc and reusable across calls. Recycled
+// indices are drained first (LIFO, with their current generation), then the
+// remainder is allocated as one contiguous run from the high-water mark,
+// growing the generation table at most once — amortising the per-id branch,
+// capacity check and growth that Next() pays on every call.
+func (p *UID64Pool) NextN(dst []UID64) {
+	w := 0
+
+	for w < len(dst) && len(p.freeIndices) > 0 {
+		fLen := len(p.freeIndices)
+		index := p.freeIndices[fLen-1]
+		p.freeIndices = p.freeIndices[:fLen-1]
+		dst[w] = newUID(p.generations[index], index)
+		w++
+	}
+
+	if remaining := len(dst) - w; remaining > 0 {
+		p.ensure(p.lastIndex + uint32(remaining))
+		for ; w < len(dst); w++ {
+			index := p.lastIndex
+			p.lastIndex++
+			dst[w] = newUID(p.generations[index], index)
+		}
+	}
+}
+
+// ensure guarantees the generation table can address indices up to need-1,
+// growing by doubling (and at least to need) when short.
+func (p *UID64Pool) ensure(need uint32) {
+	if p.capacity >= need {
+		return
+	}
+
 	newCap := p.capacity * 2
 	if newCap == 0 {
 		newCap = 8
+	}
+	for newCap < need {
+		newCap *= 2
 	}
 
 	newGenerations := make([]uint32, newCap)

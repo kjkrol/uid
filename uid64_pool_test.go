@@ -6,8 +6,8 @@ import (
 
 // 1. Sequential Allocation
 func TestUID64Pool_SequentialAllocation(t *testing.T) {
-	pool := NewUID64Pool(10, 10)
-
+	var pool UID64Pool
+	pool.Init(10, 10)
 	// Case: New entities receive incremental indices and generation 0
 	for i := range 5 {
 		e := pool.Next()
@@ -28,8 +28,8 @@ func TestUID64Pool_SequentialAllocation(t *testing.T) {
 
 // 2. Index Recycling
 func TestUID64Pool_Recycling(t *testing.T) {
-	pool := NewUID64Pool(10, 10)
-
+	var pool UID64Pool
+	pool.Init(10, 10)
 	// Case: Releasing and reusing an index
 	e0 := pool.Next() // idx: 0, gen: 0
 	pool.Release(e0)
@@ -59,8 +59,8 @@ func TestUID64Pool_Recycling(t *testing.T) {
 
 // 3. Validation Logic
 func TestUID64Pool_Validation(t *testing.T) {
-	pool := NewUID64Pool(10, 10)
-
+	var pool UID64Pool
+	pool.Init(10, 10)
 	// Case: Active entity is valid
 	e := pool.Next()
 	if !pool.IsValid(e) {
@@ -91,7 +91,8 @@ func TestUID64Pool_Validation(t *testing.T) {
 
 // 4. Stress & Multiple Reuse
 func TestUID64Pool_MultipleReuse(t *testing.T) {
-	pool := NewUID64Pool(1, 1)
+	var pool UID64Pool
+	pool.Init(1, 1)
 	idx := uint32(0)
 
 	// Case: Cycling the same index multiple times
@@ -110,8 +111,8 @@ func TestUID64Pool_MultipleReuse(t *testing.T) {
 // 5. Initial State
 func TestUID64Pool_InitialState(t *testing.T) {
 	capacity := 128
-	pool := NewUID64Pool(capacity, capacity)
-
+	var pool UID64Pool
+	pool.Init(capacity, capacity)
 	// Case: Internal slices should respect initial capacity
 	if cap(pool.generations) < capacity {
 		t.Errorf("expected generations capacity at least %d, got %d", capacity, cap(pool.generations))
@@ -124,14 +125,16 @@ func TestUID64Pool_InitialState(t *testing.T) {
 // 6. Dynamic Growth
 func TestUID64Pool_Grow(t *testing.T) {
 	// Case: Capacity zero grows to 8
-	poolZero := NewUID64Pool(0, 0)
+	var poolZero UID64Pool
+	poolZero.Init(0, 0)
 	poolZero.Next()
 	if poolZero.capacity != 8 {
 		t.Errorf("expected zero capacity to grow to 8, got %d", poolZero.capacity)
 	}
 
 	// Case: Capacity doubles when full
-	pool := NewUID64Pool(2, 2)
+	var pool UID64Pool
+	pool.Init(2, 2)
 	pool.Next() // idx 0
 	pool.Next() // idx 1
 
@@ -150,8 +153,8 @@ func TestUID64Pool_Grow(t *testing.T) {
 
 // 7. Reset State
 func TestUID64Pool_Reset(t *testing.T) {
-	pool := NewUID64Pool(10, 10)
-
+	var pool UID64Pool
+	pool.Init(10, 10)
 	// Case: Reset clears state
 	e1 := pool.Next()
 	pool.Release(e1)

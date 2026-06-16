@@ -70,20 +70,17 @@ func newUID(gen, index uint32) UID64 {
 
 // Index extracts the 32-bit index component from the UID64.
 func (u UID64) Index() uint32 {
-	return uint32(uint64(u) & IndexMask)
+	return uint32(u & IndexMask)
 }
 
 // Generation extracts the 24-bit generation counter from the UID64.
 func (u UID64) Generation() uint32 {
-	return uint32((uint64(u) >> GenerationShift) & GenerationMask)
+	return uint32((u >> GenerationShift) & GenerationMask)
 }
 
 // Unpack extracts both the index and the generation from the UID64.
 func (u UID64) Unpack() (uint32, uint32) {
-	raw := uint64(u)
-	index := uint32(raw & IndexMask)
-	gen := uint32((raw >> GenerationShift) & GenerationMask)
-	return index, gen
+	return uint32(u & IndexMask), uint32((u >> GenerationShift) & GenerationMask)
 }
 
 // MetaSegment reads the value of a specific metadata segment directly from the UID64.
@@ -100,7 +97,7 @@ func (u UID64) WithMetaSegment(s MetaSegment, value uint8) UID64 {
 }
 
 func (u UID64) metadata() uint8 {
-	return uint8(uint64(u) >> MetadataShift)
+	return uint8(u >> MetadataShift)
 }
 
 func (u UID64) withMetadata(metadata uint8) UID64 {

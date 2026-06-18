@@ -21,8 +21,8 @@ func TestUID64Pool_SequentialAllocation(t *testing.T) {
 		}
 	}
 
-	if pool.lastIndex != 5 {
-		t.Errorf("expected lastIndex to be 5, got %d", pool.lastIndex)
+	if pool.nextIndex != 5 {
+		t.Errorf("expected lastIndex to be 5, got %d", pool.nextIndex)
 	}
 }
 
@@ -151,7 +151,49 @@ func TestUID64Pool_Grow(t *testing.T) {
 	}
 }
 
-// 7. Reset State
+// 7. PeekNextIndex
+func TestUID64Pool_PeekNextIndex(t *testing.T) {
+	var pool UID64Pool
+	pool.Init(10, 10)
+
+	// Case: zero before any allocation
+	if got := pool.PeekNextIndex(); got != 0 {
+		t.Errorf("expected 0 before allocation, got %d", got)
+	}
+
+	// Case: advances with sequential allocations
+	pool.Next()
+	pool.Next()
+	pool.Next()
+	if got := pool.PeekNextIndex(); got != 3 {
+		t.Errorf("expected 3 after 3 Next() calls, got %d", got)
+	}
+
+	// Case: recycled index does not advance PeekNextIndex
+	e := pool.Next() // idx 3
+	pool.Release(e)
+	pool.Next() // recycles idx 3
+	if got := pool.PeekNextIndex(); got != 4 {
+		t.Errorf("expected 4 after recycled allocation, got %d", got)
+	}
+
+	// Case: NextN advances by the fresh count only
+	pool.Release(pool.Next()) // recycle idx 4
+	dst := make([]UID64, 3)   // 1 recycled + 2 fresh
+	pool.NextN(dst)
+	if got := pool.PeekNextIndex(); got != 7 {
+		t.Errorf("expected 7 after NextN(3) with 1 recycled, got %d", got)
+	}
+
+	// Case: does not mutate state
+	before := pool.PeekNextIndex()
+	pool.PeekNextIndex()
+	if pool.PeekNextIndex() != before {
+		t.Error("PeekNextIndex must not mutate pool state")
+	}
+}
+
+// 8. Reset State
 func TestUID64Pool_Reset(t *testing.T) {
 	var pool UID64Pool
 	pool.Init(10, 10)
@@ -162,8 +204,8 @@ func TestUID64Pool_Reset(t *testing.T) {
 
 	pool.Reset()
 
-	if pool.lastIndex != 0 {
-		t.Errorf("expected lastIndex 0 after reset, got %d", pool.lastIndex)
+	if pool.nextIndex != 0 {
+		t.Errorf("expected lastIndex 0 after reset, got %d", pool.nextIndex)
 	}
 	if len(pool.freeIndices) != 0 {
 		t.Errorf("expected freeIndices to be empty after reset")

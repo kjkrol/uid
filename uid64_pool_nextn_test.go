@@ -71,7 +71,7 @@ func BenchmarkPoolNext(b *testing.B) {
 			var p UID64Pool
 			p.Init(n, 0)
 			for b.Loop() {
-				p.lastIndex = 0
+				p.nextIndex = 0
 				for i := range dst {
 					dst[i] = p.Next()
 				}
@@ -81,7 +81,7 @@ func BenchmarkPoolNext(b *testing.B) {
 			var p UID64Pool
 			p.Init(n, 0)
 			for b.Loop() {
-				p.lastIndex = 0
+				p.nextIndex = 0
 				p.NextN(dst)
 			}
 		})

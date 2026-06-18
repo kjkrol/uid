@@ -2,7 +2,7 @@ package uid
 
 // UID64Pool manages the allocation, recycling, and validation of UID64 identifiers.
 type UID64Pool struct {
-	lastIndex   uint32
+	nextIndex   uint32
 	freeIndices []uint32
 	generations []uint32
 	capacity    uint32
@@ -13,7 +13,7 @@ type UID64Pool struct {
 // recycleCap sizes the released-index recycling list. It resets any prior state,
 // so it may also be used to re-initialise a reused pool.
 func (p *UID64Pool) Init(indexCap, recycleCap int) {
-	p.lastIndex = 0
+	p.nextIndex = 0
 	p.freeIndices = make([]uint32, 0, recycleCap)
 	p.generations = make([]uint32, indexCap)
 	p.capacity = uint32(indexCap)
@@ -21,7 +21,7 @@ func (p *UID64Pool) Init(indexCap, recycleCap int) {
 
 // Reset clears the pool state, invalidating all previously issued UID64s.
 func (p *UID64Pool) Reset() {
-	p.lastIndex = 0
+	p.nextIndex = 0
 	p.freeIndices = p.freeIndices[:0]
 	clear(p.generations)
 }
@@ -36,10 +36,10 @@ func (p *UID64Pool) Next() UID64 {
 		return newUID(gen, index)
 	}
 
-	p.ensure(p.lastIndex + 1)
+	p.ensure(p.nextIndex + 1)
 
-	index := p.lastIndex
-	p.lastIndex++
+	index := p.nextIndex
+	p.nextIndex++
 
 	return newUID(p.generations[index], index)
 }
@@ -62,13 +62,20 @@ func (p *UID64Pool) NextN(dst []UID64) {
 	}
 
 	if remaining := len(dst) - w; remaining > 0 {
-		p.ensure(p.lastIndex + uint32(remaining))
+		p.ensure(p.nextIndex + uint32(remaining))
 		for ; w < len(dst); w++ {
-			index := p.lastIndex
-			p.lastIndex++
+			index := p.nextIndex
+			p.nextIndex++
 			dst[w] = newUID(p.generations[index], index)
 		}
 	}
+}
+
+// PeekNextIndex returns the index that will be assigned to the next sequentially
+// allocated UID64. It does not reserve or advance any state. Use after NextN to
+// obtain the sequential high-water mark for capacity checks.
+func (p *UID64Pool) PeekNextIndex() uint32 {
+	return p.nextIndex
 }
 
 // ensure guarantees the generation table can address indices up to need-1,
@@ -106,5 +113,5 @@ func (p *UID64Pool) Release(u UID64) uint32 {
 // IsValid verifies if the given UID64 is currently active in the pool.
 func (p *UID64Pool) IsValid(u UID64) bool {
 	index, gen := u.Unpack()
-	return index < p.lastIndex && p.generations[index] == gen
+	return index < p.nextIndex && p.generations[index] == gen
 }

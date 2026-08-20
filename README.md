@@ -135,3 +135,35 @@ func main() {
 	fmt.Printf("Virtual: %v, Frag: %d\n", isVirtual, fragValue)
 }
 ```
+
+### Snapshotting a Pool (State / Restore)
+
+`State` captures a pool's bookkeeping as plain data; `Restore` replaces a pool's bookkeeping with a
+previously captured snapshot, so future allocations and validations behave exactly as if the pool
+had reached that point through ordinary use.
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/kjkrol/uid"
+)
+
+func main() {
+	var pool uid.UID64Pool
+	pool.Init(1000, 100)
+
+	id := pool.Next()
+	pool.Release(id)
+
+	// Capture the pool's bookkeeping.
+	nextIndex, generations, freeIndices := pool.State()
+
+	// ...later, on a fresh pool, reproduce the exact same allocation state:
+	var restored uid.UID64Pool
+	restored.Restore(nextIndex, generations, freeIndices)
+
+	fmt.Println(restored.IsValid(id)) // false — same result as the original pool
+}
+```

@@ -36,6 +36,12 @@
 // buffer, amortising the per-id branch, capacity check and growth — preferable
 // for bulk creation.
 //
+// [UID64Pool.State] snapshots the pool's bookkeeping (next index, per-index
+// generations, free list) as plain data; [UID64Pool.Restore] replaces a
+// pool's bookkeeping with a previously captured snapshot, so subsequent
+// allocations and validations behave exactly as if the pool had reached
+// that point through ordinary use.
+//
 // # Metadata segments
 //
 // [MetaSegment] divides the 8-bit metadata space into fixed, pre-shifted

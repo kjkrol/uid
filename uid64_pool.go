@@ -115,3 +115,30 @@ func (p *UID64Pool) IsValid(u UID64) bool {
 	index, gen := u.Unpack()
 	return index < p.nextIndex && p.generations[index] == gen
 }
+
+// State returns a snapshot of the pool's bookkeeping: nextIndex is the
+// sequential high-water mark, generations holds the current generation per
+// index, and freeIndices lists indices available for reuse (LIFO release
+// order). The returned slices are copies, safe to keep or mutate.
+func (p *UID64Pool) State() (nextIndex uint32, generations []uint32, freeIndices []uint32) {
+	generations = make([]uint32, len(p.generations))
+	copy(generations, p.generations)
+	freeIndices = make([]uint32, len(p.freeIndices))
+	copy(freeIndices, p.freeIndices)
+	return p.nextIndex, generations, freeIndices
+}
+
+// Restore replaces the pool's bookkeeping with a previously captured State,
+// so subsequent Next, NextN, and IsValid behave as if the pool had reached
+// that exact point through ordinary use. Safe to call on a zero-value pool
+// (acts as an Init from a snapshot) or an already-Init'd one — either way it
+// replaces all bookkeeping and copies the given slices rather than aliasing
+// them.
+func (p *UID64Pool) Restore(nextIndex uint32, generations []uint32, freeIndices []uint32) {
+	p.generations = make([]uint32, len(generations))
+	copy(p.generations, generations)
+	p.capacity = uint32(len(p.generations))
+	p.freeIndices = make([]uint32, len(freeIndices))
+	copy(p.freeIndices, freeIndices)
+	p.nextIndex = nextIndex
+}

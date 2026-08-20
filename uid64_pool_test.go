@@ -227,3 +227,79 @@ func TestUID64Pool_Reset(t *testing.T) {
 		t.Error("expected old entity to remain invalid even after reallocating its index")
 	}
 }
+
+// 9. State / Restore round-trip
+func TestUID64Pool_StateRestore_RoundTrip(t *testing.T) {
+	var original UID64Pool
+	original.Init(16, 8)
+
+	ids := make([]UID64, 5)
+	original.NextN(ids)      // occupy a few
+	original.Release(ids[1]) // release some — bumps generation, adds to freeIndices
+	original.Release(ids[3])
+	extra := original.Next()
+
+	nextIndex, generations, freeIndices := original.State()
+
+	var restored UID64Pool
+	restored.Init(16, 8)
+	restored.Restore(nextIndex, generations, freeIndices)
+
+	for _, id := range append(append([]UID64{}, ids...), extra) {
+		if original.IsValid(id) != restored.IsValid(id) {
+			t.Errorf("IsValid mismatch for %v", id)
+		}
+	}
+
+	// Future allocations from both pools must be identical: same nextIndex
+	// and same freeIndices order produce a deterministic result.
+	if got, want := restored.Next(), original.Next(); got != want {
+		t.Errorf("restored pool diverged: got %v, want %v", got, want)
+	}
+}
+
+// State/Restore must not alias the caller's or the pool's internal slices.
+func TestUID64Pool_StateRestore_NoAliasing(t *testing.T) {
+	var original UID64Pool
+	original.Init(4, 4)
+	ids := make([]UID64, 2)
+	original.NextN(ids)
+	original.Release(ids[0])
+
+	_, generations, freeIndices := original.State()
+	generations[0] = 999
+	freeIndices[0] = 999
+	if original.generations[0] == 999 || original.freeIndices[0] == 999 {
+		t.Error("State() must return copies, not aliases of internal slices")
+	}
+
+	nextIndex, generations, freeIndices := original.State()
+	var restored UID64Pool
+	restored.Restore(nextIndex, generations, freeIndices)
+	generations[0] = 999
+	freeIndices[0] = 999
+	if restored.generations[0] == 999 || restored.freeIndices[0] == 999 {
+		t.Error("Restore() must copy the given slices, not alias them")
+	}
+}
+
+// Restore must work directly on a zero-value pool, without a prior Init.
+func TestUID64Pool_Restore_ZeroValuePool(t *testing.T) {
+	var original UID64Pool
+	original.Init(8, 8)
+	ids := make([]UID64, 3)
+	original.NextN(ids)
+	nextIndex, generations, freeIndices := original.State()
+
+	var restored UID64Pool // no Init call
+	restored.Restore(nextIndex, generations, freeIndices)
+
+	for _, id := range ids {
+		if !restored.IsValid(id) {
+			t.Errorf("expected %v to be valid on a Restore'd zero-value pool", id)
+		}
+	}
+	if got, want := restored.Next(), original.Next(); got != want {
+		t.Errorf("restored pool diverged: got %v, want %v", got, want)
+	}
+}
